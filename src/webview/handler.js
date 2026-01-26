@@ -17,6 +17,15 @@ function handleWebviewMessage(message, panel) {
     case 'selectFile':
       handleSelectFile(message, panel);
       break;
+    case 'setProgress':
+      handleSetProgress(message, panel);
+      break;
+    case 'setDefaultBook':
+      handleSetDefaultBook(message, panel);
+      break;
+    case 'clearDefaultBook':
+      handleClearDefaultBook(panel);
+      break;
   }
 }
 
@@ -70,7 +79,56 @@ async function handleSaveSettings(message) {
     await updateConfig('fontColor', message.fontColor);
     vscode.window.showInformationMessage('设置已保存并生效');
   } catch (error) {
+    console.error('保存设置失败:', error.message);
     vscode.window.showErrorMessage('保存设置失败: ' + error.message);
+  }
+}
+
+async function handleSetDefaultBook(message, panel) {
+  try {
+    const filePath = message.file;
+    await updateConfig('defaultBook', filePath);
+    
+    // 获取文件名
+    const fileName = path.basename(filePath);
+    vscode.window.showInformationMessage(`已将 "${fileName}" 设置为默认书籍\n\n按 Ctrl+0 (Mac: Cmd+0) 可直接打开该书籍阅读`);
+    
+    // 更新设置面板中的默认书籍显示
+    panel.webview.postMessage({
+      command: 'updateSettings',
+      settings: {
+        defaultBook: filePath,
+        linesPerPage: getConfig().get('linesPerPage') || 1,
+        fontSize: getConfig().get('fontSize') || 14,
+        fontColor: getConfig().get('fontColor') || '#A8A8A8',
+        bookFolderPath: getBookFolderPath()
+      }
+    });
+  } catch (error) {
+    console.error('设置默认书籍失败:', error.message);
+    vscode.window.showErrorMessage('设置默认书籍失败: ' + error.message);
+  }
+}
+
+async function handleClearDefaultBook(panel) {
+  try {
+    await updateConfig('defaultBook', '');
+    vscode.window.showInformationMessage('默认书籍已清除');
+    
+    // 更新设置面板中的默认书籍显示
+    panel.webview.postMessage({
+      command: 'updateSettings',
+      settings: {
+        defaultBook: '',
+        linesPerPage: getConfig().get('linesPerPage') || 1,
+        fontSize: getConfig().get('fontSize') || 14,
+        fontColor: getConfig().get('fontColor') || '#A8A8A8',
+        bookFolderPath: getBookFolderPath()
+      }
+    });
+  } catch (error) {
+    console.error('清除默认书籍失败:', error.message);
+    vscode.window.showErrorMessage('清除默认书籍失败: ' + error.message);
   }
 }
 
@@ -84,6 +142,45 @@ async function handleSelectFile(message, panel) {
     bookReader.readTxt(message.file, message.startLine || 0);
   }
   panel.dispose();
+}
+
+async function handleSetProgress(message, panel) {
+  try {
+    const filePath = message.file;
+    const newLine = message.line;
+    const ext = path.extname(filePath).toLowerCase();
+    
+    // 对于epub文件，需要处理对应的txt文件
+    let actualFilePath = filePath;
+    if (ext === '.epub') {
+      actualFilePath = filePath.replace('.epub', '.txt');
+      // 如果txt文件不存在，先转换epub文件
+      if (!fs.existsSync(actualFilePath)) {
+        await handleEpubFile(filePath);
+      }
+    }
+    
+    // 读取文件内容，获取总行数
+    const content = fs.readFileSync(actualFilePath, 'utf-8');
+    const lines = content.split('\n').filter(x => x !== '');
+    const totalLines = lines.length;
+    
+    // 确保新行号在有效范围内
+    const validLine = Math.max(0, Math.min(newLine, totalLines - 1));
+    
+    // 保存新的进度
+    const { saveReadingProgress } = require('../services/progress');
+    saveReadingProgress(actualFilePath, validLine, totalLines);
+    
+    // 更新文件列表，显示新的进度
+    updateFileList(panel);
+    
+    // 显示成功消息
+    vscode.window.showInformationMessage(`阅读进度已更新为第 ${validLine} 行`);
+  } catch (error) {
+    console.error('设置阅读进度失败:', error.message);
+    vscode.window.showErrorMessage('设置阅读进度失败: ' + error.message);
+  }
 }
 
 module.exports = {

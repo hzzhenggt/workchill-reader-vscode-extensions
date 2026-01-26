@@ -324,6 +324,120 @@
       border-radius: 4px;
       background: var(--bg-primary);
     }
+
+    /* 添加最后阅读时间样式 */
+    .file-last-time {
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* 添加上下文内容样式 */
+    .file-context {
+      background: var(--bg-secondary);
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 8px;
+      font-size: 12px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+
+    .context-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: var(--text-primary);
+    }
+
+    .context-content {
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      line-height: 1.4;
+    }
+
+    /* 添加三级按钮样式 */
+    .btn-tertiary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 12px;
+      padding: 6px 12px;
+    }
+
+    .btn-tertiary:hover {
+      background: var(--bg-hover);
+    }
+
+    /* 添加对话框样式 */
+    .dialog-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialog {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow: hidden;
+    }
+
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .dialog-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+
+    .dialog-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-close:hover {
+      color: var(--text-primary);
+    }
+
+    .dialog-content {
+      padding: 20px;
+      overflow-y: auto;
+      max-height: calc(90vh - 120px);
+    }
+
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+    }
   </style>
 </head>
 <body>
@@ -357,6 +471,16 @@
         <div class="form-group">
           <label for="font-color">字体颜色</label>
           <input type="color" id="font-color" class="input color-picker">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 16px;">
+        <label for="default-book">默认书籍</label>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="text" id="default-book" class="input" readonly style="flex: 1;">
+          <button id="clear-default-book" class="btn-secondary" style="padding: 8px 16px;">清除默认</button>
+        </div>
+        <div class="info-box" style="margin-top: 8px;">
+          提示：设置默认书籍后，按 Ctrl+0 (Mac: Cmd+0) 可直接打开默认书籍阅读
         </div>
       </div>
       <button id="save-settings" class="btn-primary">保存设置</button>
@@ -407,11 +531,22 @@
             <div class="file-info">
               <div class="file-name">${file.name}</div>
               <div class="file-progress">
-                ${progress.currentLine ? `已读进度：${progressPercent}%` : '未开始阅读'}
+                ${progress.currentLine ? `已读进度：${progress.progressPercent || progressPercent}%` : '未开始阅读'}
               </div>
               <div class="progress-bar">
                 <div class="progress-fill" style="width: ${progressPercent}%"></div>
               </div>
+              ${progress.lastTime ? `
+              <div class="file-last-time">
+                最后阅读：${new Date(progress.lastTime).toLocaleString()}
+              </div>
+              ` : ''}
+              ${progress.context ? `
+              <div class="file-context">
+                <div class="context-title">上下文：</div>
+                <div class="context-content">${progress.context}</div>
+              </div>
+              ` : ''}
               <div class="file-actions">
                 ${progress.currentLine ? 
                   `<button class="btn-primary btn-small" onclick="continueReading(${filtPath}, ${progress.currentLine})">继续阅读</button>` : 
@@ -420,6 +555,11 @@
                 <button class="btn-secondary btn-small" onclick="startReading(${filtPath})">
                   ${progress.currentLine ? '重新开始' : '开始阅读'}
                 </button>
+                ${progress.currentLine ? 
+                  `<button class="btn-tertiary btn-small" onclick="showSetProgressDialog(${filtPath}, ${progress.currentLine}, ${progress.totalLines})">设置进度</button>` : 
+                  ''
+                }
+                <button class="btn-tertiary btn-small" onclick="setDefaultBook('${filtPath.replace(/'/g, "\\'")}', '${file.name.replace(/'/g, "\\'")}')">设置为默认</button>
               </div>
             </div>
           </div>
@@ -432,7 +572,27 @@
       document.getElementById('lines-per-page').value = settings.linesPerPage || 1;
       document.getElementById('font-size').value = settings.fontSize || 14;
       document.getElementById('font-color').value = settings.fontColor || '#A8A8A8';
+      document.getElementById('default-book').value = settings.defaultBook || '';
     }
+
+    // 设置默认书籍
+    function setDefaultBook(filePath, fileName) {
+      if (confirm(`确定要将 "${fileName}" 设置为默认书籍吗？\n\n设置后按 Ctrl+0 (Mac: Cmd+0) 可直接打开该书籍阅读。`)) {
+        vscode.postMessage({
+          command: 'setDefaultBook',
+          file: filePath
+        });
+      }
+    }
+
+    // 清除默认书籍
+    document.getElementById('clear-default-book').addEventListener('click', () => {
+      if (confirm('确定要清除默认书籍吗？')) {
+        vscode.postMessage({
+          command: 'clearDefaultBook'
+        });
+      }
+    });
 
     // 处理目录选择
     document.getElementById('select-directory').addEventListener('click', () => {
@@ -468,6 +628,74 @@
         command: 'selectFile',
         file: filePath,
         startLine: 0
+      });
+    }
+
+    // 显示设置进度对话框
+    function showSetProgressDialog(filePath, currentLine, totalLines) {
+      // 创建对话框
+      const dialog = document.createElement('div');
+      dialog.className = 'dialog-overlay';
+      dialog.innerHTML = `
+        <div class="dialog">
+          <div class="dialog-header">
+            <h3>设置阅读进度</h3>
+            <button class="dialog-close" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</button>
+          </div>
+          <div class="dialog-content">
+            <div class="form-group">
+              <label for="set-line-input">当前行：</label>
+              <input type="number" id="set-line-input" min="0" max="${totalLines - 1}" value="${currentLine}" class="input">
+            </div>
+            <div class="form-group">
+              <label for="set-percent-input">进度百分比：</label>
+              <input type="number" id="set-percent-input" min="0" max="100" step="0.001" value="${((currentLine / Math.max(1, totalLines - 1)) * 100).toFixed(3)}" class="input">
+            </div>
+            <div class="form-group">
+              <label>总行数：${totalLines}</label>
+            </div>
+          </div>
+          <div class="dialog-footer">
+            <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">取消</button>
+            <button class="btn-primary" onclick="setProgress('${filePath.replace(/'/g, "\\'")}', ${totalLines})">确定</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(dialog);
+
+      // 添加输入框联动
+      const lineInput = document.getElementById('set-line-input');
+      const percentInput = document.getElementById('set-percent-input');
+
+      lineInput.addEventListener('input', function() {
+        const line = parseInt(this.value) || 0;
+        const percent = (line / Math.max(1, totalLines - 1) * 100).toFixed(3);
+        percentInput.value = percent;
+      });
+
+      percentInput.addEventListener('input', function() {
+        const percent = parseFloat(this.value) || 0;
+        const line = Math.round(percent / 100 * (totalLines - 1));
+        lineInput.value = line;
+      });
+    }
+
+    // 设置进度
+    function setProgress(filePath, totalLines) {
+      const lineInput = document.getElementById('set-line-input');
+      const newLine = parseInt(lineInput.value) || 0;
+      
+      // 关闭对话框
+      const dialog = document.querySelector('.dialog-overlay');
+      if (dialog) {
+        dialog.remove();
+      }
+      
+      // 发送设置进度消息
+      vscode.postMessage({
+        command: 'setProgress',
+        file: filePath,
+        line: newLine
       });
     }
 

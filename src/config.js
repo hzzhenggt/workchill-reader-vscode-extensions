@@ -3,6 +3,7 @@ const vscode = require('vscode');
 // 配置相关变量
 let config;
 let bookFolderPath;
+let defaultBook;
 let linesPerPage;
 let fontSize;
 let fontColor;
@@ -13,8 +14,9 @@ let configChangeListeners = [];
  * @param {vscode.ExtensionContext} context 扩展上下文
  */
 function initializeConfig(context) {
-  config = vscode.workspace.getConfiguration('workchill');
+  config = vscode.workspace.getConfiguration('ttt-eye');
   bookFolderPath = config.get('bookFolder') || context.extensionPath;
+  defaultBook = config.get('defaultBook') || '';
   linesPerPage = config.get('linesPerPage') || 1;
   fontSize = config.get('fontSize') || 14;
   fontColor = config.get('fontColor') || '#A8A8A8';
@@ -30,24 +32,29 @@ function initializeConfig(context) {
  * @param {vscode.ConfigurationChangeEvent} event 配置变更事件
  */
 function handleConfigChange(event) {
-  if (event.affectsConfiguration('workchill')) {
-    config = vscode.workspace.getConfiguration('workchill');
+  if (event.affectsConfiguration('ttt-eye')) {
+    config = vscode.workspace.getConfiguration('ttt-eye');
 
-    if (event.affectsConfiguration('workchill.bookFolder')) {
+    if (event.affectsConfiguration('ttt-eye.bookFolder')) {
       bookFolderPath = config.get('bookFolder');
     }
     
-    if (event.affectsConfiguration('workchill.linesPerPage')) {
+    if (event.affectsConfiguration('ttt-eye.defaultBook')) {
+      defaultBook = config.get('defaultBook');
+      notifyConfigChange('defaultBook', defaultBook);
+    }
+    
+    if (event.affectsConfiguration('ttt-eye.linesPerPage')) {
       linesPerPage = config.get('linesPerPage');
       notifyConfigChange('linesPerPage', linesPerPage);
     }
 
-    if (event.affectsConfiguration('workchill.fontSize')) {
+    if (event.affectsConfiguration('ttt-eye.fontSize')) {
       fontSize = config.get('fontSize');
       notifyConfigChange('fontSize', fontSize);
     }
 
-    if (event.affectsConfiguration('workchill.fontColor')) {
+    if (event.affectsConfiguration('ttt-eye.fontColor')) {
       fontColor = config.get('fontColor');
       notifyConfigChange('fontColor', fontColor);
     }
@@ -87,6 +94,7 @@ module.exports = {
   initializeConfig,
   getConfig: () => config,
   getBookFolderPath: () => bookFolderPath,
+  getDefaultBook: () => defaultBook,
   getLinesPerPage: () => linesPerPage,
   getFontSize: () => fontSize,
   getFontColor: () => fontColor,

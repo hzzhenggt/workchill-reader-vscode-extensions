@@ -9,4 +9,4 @@ vsc-extension-quickstart.md
 **/*.map
 **/eslint.config.mjs
 **/.vscode-test.*
-reading-progress.json
+*.进度.json
