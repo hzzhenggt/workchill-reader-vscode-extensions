@@ -524,7 +524,8 @@
         const progress = file.progress || {};
         const progressPercent = progress.currentLine ? 
           Math.min(100, Math.round((progress.currentLine / Math.max(1, progress.totalLines - 1)) * 100)) : 0;
-          const filtPath = JSON.stringify(file.path).replace(/\"/g,"'");
+          // 使用base64编码文件路径，确保特殊字符被正确处理
+          const encodedPath = btoa(unescape(encodeURIComponent(file.path)));
           
         return `
           <div class="file-item">
@@ -549,17 +550,17 @@
               ` : ''}
               <div class="file-actions">
                 ${progress.currentLine ? 
-                  `<button class="btn-primary btn-small" onclick="continueReading(${filtPath}, ${progress.currentLine})">继续阅读</button>` : 
+                  `<button class="btn-primary btn-small" onclick="continueReading('${encodedPath}', ${progress.currentLine})">继续阅读</button>` : 
                   ''
                 }
-                <button class="btn-secondary btn-small" onclick="startReading(${filtPath})">
+                <button class="btn-secondary btn-small" onclick="startReading('${encodedPath}')">
                   ${progress.currentLine ? '重新开始' : '开始阅读'}
                 </button>
                 ${progress.currentLine ? 
-                  `<button class="btn-tertiary btn-small" onclick="showSetProgressDialog(${filtPath}, ${progress.currentLine}, ${progress.totalLines})">设置进度</button>` : 
+                  `<button class="btn-tertiary btn-small" onclick="showSetProgressDialog('${encodedPath}', ${progress.currentLine}, ${progress.totalLines})">设置进度</button>` : 
                   ''
                 }
-                <button class="btn-tertiary btn-small" onclick="setDefaultBook('${filtPath.replace(/'/g, "\\'")}', '${file.name.replace(/'/g, "\\'")}')">设置为默认</button>
+                <button class="btn-tertiary btn-small" onclick="setDefaultBook('${encodedPath}', '${file.name.replace(/'/g, "\\'")}')">设置为默认</button>
               </div>
             </div>
           </div>
@@ -576,7 +577,8 @@
     }
 
     // 设置默认书籍
-    function setDefaultBook(filePath, fileName) {
+    function setDefaultBook(encodedFilePath, fileName) {
+      const filePath = decodeBase64(encodedFilePath);
       if (confirm(`确定要将 "${fileName}" 设置为默认书籍吗？\n\n设置后按 Ctrl+0 (Mac: Cmd+0) 可直接打开该书籍阅读。`)) {
         vscode.postMessage({
           command: 'setDefaultBook',
@@ -613,8 +615,14 @@
       });
     });
 
+    // base64解码函数
+    function decodeBase64(encoded) {
+      return decodeURIComponent(escape(atob(encoded)));
+    }
+
     // 继续阅读
-    function continueReading(filePath, line) {
+    function continueReading(encodedFilePath, line) {
+      const filePath = decodeBase64(encodedFilePath);
       vscode.postMessage({
         command: 'selectFile',
         file: filePath,
@@ -623,7 +631,8 @@
     }
 
     // 开始阅读
-    function startReading(filePath) {
+    function startReading(encodedFilePath) {
+      const filePath = decodeBase64(encodedFilePath);
       vscode.postMessage({
         command: 'selectFile',
         file: filePath,
@@ -632,7 +641,7 @@
     }
 
     // 显示设置进度对话框
-    function showSetProgressDialog(filePath, currentLine, totalLines) {
+    function showSetProgressDialog(encodedFilePath, currentLine, totalLines) {
       // 创建对话框
       const dialog = document.createElement('div');
       dialog.className = 'dialog-overlay';
@@ -657,7 +666,7 @@
           </div>
           <div class="dialog-footer">
             <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">取消</button>
-            <button class="btn-primary" onclick="setProgress('${filePath.replace(/'/g, "\\'")}', ${totalLines})">确定</button>
+            <button class="btn-primary" onclick="setProgress('${encodedFilePath}', ${totalLines})">确定</button>
           </div>
         </div>
       `;
@@ -681,7 +690,7 @@
     }
 
     // 设置进度
-    function setProgress(filePath, totalLines) {
+    function setProgress(encodedFilePath, totalLines) {
       const lineInput = document.getElementById('set-line-input');
       const newLine = parseInt(lineInput.value) || 0;
       
@@ -692,6 +701,7 @@
       }
       
       // 发送设置进度消息
+      const filePath = decodeBase64(encodedFilePath);
       vscode.postMessage({
         command: 'setProgress',
         file: filePath,

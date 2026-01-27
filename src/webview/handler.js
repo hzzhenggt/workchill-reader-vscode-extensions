@@ -80,6 +80,7 @@ async function handleSaveSettings(message) {
     await updateConfig('fontSize', parseInt(message.fontSize));
     await updateConfig('fontColor', message.fontColor);
     vscode.window.showInformationMessage('设置已保存并生效');
+    logger.log('Settings saved:', message); 
   } catch (error) {
     logger.error('保存设置失败:', error.message);
     vscode.window.showErrorMessage('保存设置失败: ' + error.message);
@@ -88,7 +89,15 @@ async function handleSaveSettings(message) {
 
 async function handleSetDefaultBook(message, panel) {
   try {
-    const filePath = message.file;
+    let filePath = message.file;
+    // 尝试解码base64编码的文件路径
+    try {
+      filePath = decodeBase64(filePath);
+    } catch (error) {
+      // 如果解码失败，使用原始路径
+      logger.warn('Failed to decode base64 path, using original:', filePath);
+    }
+    
     await updateConfig('defaultBook', filePath);
     
     // 获取文件名
@@ -134,33 +143,55 @@ async function handleClearDefaultBook(panel) {
   }
 }
 
+// base64解码函数
+function decodeBase64(encoded) {
+  return decodeURIComponent(escape(Buffer.from(encoded, 'base64').toString()));
+}
+
 async function handleSelectFile(message, panel) {
-  const ext = path.extname(message.file).toLowerCase();
+  let filePath = message.file;
+  // 尝试解码base64编码的文件路径
+  try {
+    filePath = decodeBase64(filePath);
+  } catch (error) {
+    // 如果解码失败，使用原始路径
+    logger.warn('Failed to decode base64 path, using original:', filePath);
+  }
+  
+  const ext = path.extname(filePath).toLowerCase();
   if (ext === '.epub') {
-    await handleEpubFile(message.file);
+    await handleEpubFile(filePath);
   } else {
-    logger.log('Selected file:', message.file);
+    logger.log('Selected file:', filePath);
     
-    bookReader.readTxt(message.file, message.startLine || 0);
+    bookReader.readTxt(filePath, message.startLine || 0);
   }
   panel.dispose();
 }
 
 async function handleSetProgress(message, panel) {
   try {
-    const filePath = message.file;
+    let filePath = message.file;
+    // 尝试解码base64编码的文件路径
+    try {
+      filePath = decodeBase64(filePath);
+    } catch (error) {
+      // 如果解码失败，使用原始路径
+      logger.warn('Failed to decode base64 path, using original:', filePath);
+    }
+    
     const newLine = message.line;
     const ext = path.extname(filePath).toLowerCase();
-    const fielname = path.basename(filePath);
     // 对于epub文件，需要处理对应的txt文件
-    let actualFilePath = path.join(getBookFolderPath(), fielname);
-    let oriFilePath = actualFilePath;
+    let actualFilePath = filePath;
     if (ext === '.epub') {
       actualFilePath = filePath.replace('.epub', '.txt');
       if (!fs.existsSync(actualFilePath)) {
-        await handleEpubFile(oriFilePath);
+        await handleEpubFile(filePath);
       }
     }
+    
+    logger.log('Setting progress for file:', actualFilePath);
     
     const content = fs.readFileSync(actualFilePath, 'utf-8');
     const lines = content.split('\n').filter(x => x !== '');
