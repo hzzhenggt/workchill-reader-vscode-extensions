@@ -19,10 +19,16 @@ function registerReadingCommands() {
       // 如果有默认书籍且文件存在，直接使用
       if (defaultBook && fs.existsSync(defaultBook)) {
         const ext = path.extname(defaultBook).toLowerCase();
+        // 检查书籍是否有阅读进度
+        const { getReadingProgress } = require('../services/progress');
+        const progress = getReadingProgress();
+        const bookProgress = progress[defaultBook] || {};
+        const startLine = bookProgress.currentLine || 0;
+        
         if (ext === '.epub') {
           await handleEpubFile(defaultBook);
         } else {
-          bookReader.readTxt(defaultBook);
+          bookReader.readTxt(defaultBook, startLine);
         }
         return;
       }
@@ -49,10 +55,16 @@ function registerReadingCommands() {
       const bookPath = path.join(bookFolderPath, selectedBook);
       const ext = path.extname(selectedBook).toLowerCase();
 
+      // 检查书籍是否有阅读进度
+      const { getReadingProgress } = require('../services/progress');
+      const progress = getReadingProgress();
+      const bookProgress = progress[bookPath] || {};
+      const startLine = bookProgress.currentLine || 0;
+
       if (ext === '.epub') {
         await handleEpubFile(bookPath);
       } else {
-        bookReader.readTxt(bookPath);
+        bookReader.readTxt(bookPath, startLine);
       }
     })
   );

@@ -61,7 +61,7 @@ function getReadingProgress(bookFolderPath = null) {
     if (!folderPath) {
       try {
         const vscode = require('vscode');
-        const config = vscode.workspace.getConfiguration('workchill');
+        const config = vscode.workspace.getConfiguration('ttt-eye');
         folderPath = config.get('bookFolder') || '';
       } catch (error) {
         // 在非VSCode环境中运行时，忽略vscode模块错误
