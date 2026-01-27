@@ -1,10 +1,11 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
-const { getBookFolderPath, updateConfig } = require('../config');
+const { getBookFolderPath, updateConfig, getConfig } = require('../config');
 const bookReader = require('../services/bookReader');
 const { handleEpubFile } = require('../services/epubReader');
 const { getReadingProgress } = require('../services/progress');
+const logger = require('../utils/logger');
 
 function handleWebviewMessage(message, panel) {
   switch (message.command) {
@@ -64,7 +65,8 @@ function updateFileList(panel) {
         progress: progress[filePath] || {}
       };
     });
-
+  // 发送文件列表到Webview
+  logger.log('Updating file list:', files);
   panel.webview.postMessage({
     command: 'updateFileList',
     currentFolder: bookFolderPath,
@@ -79,7 +81,7 @@ async function handleSaveSettings(message) {
     await updateConfig('fontColor', message.fontColor);
     vscode.window.showInformationMessage('设置已保存并生效');
   } catch (error) {
-    console.error('保存设置失败:', error.message);
+    logger.error('保存设置失败:', error.message);
     vscode.window.showErrorMessage('保存设置失败: ' + error.message);
   }
 }
@@ -105,7 +107,7 @@ async function handleSetDefaultBook(message, panel) {
       }
     });
   } catch (error) {
-    console.error('设置默认书籍失败:', error.message);
+    logger.error('设置默认书籍失败:', error.message);
     vscode.window.showErrorMessage('设置默认书籍失败: ' + error.message);
   }
 }
@@ -127,7 +129,7 @@ async function handleClearDefaultBook(panel) {
       }
     });
   } catch (error) {
-    console.error('清除默认书籍失败:', error.message);
+    logger.error('清除默认书籍失败:', error.message);
     vscode.window.showErrorMessage('清除默认书籍失败: ' + error.message);
   }
 }
@@ -137,7 +139,7 @@ async function handleSelectFile(message, panel) {
   if (ext === '.epub') {
     await handleEpubFile(message.file);
   } else {
-    console.log(message.file);
+    logger.log('Selected file:', message.file);
     
     bookReader.readTxt(message.file, message.startLine || 0);
   }
@@ -149,36 +151,27 @@ async function handleSetProgress(message, panel) {
     const filePath = message.file;
     const newLine = message.line;
     const ext = path.extname(filePath).toLowerCase();
-    
+    const fielname = path.basename(filePath);
     // 对于epub文件，需要处理对应的txt文件
-    let actualFilePath = filePath;
+    let actualFilePath = path.join(getBookFolderPath(), fielname);
+    let oriFilePath = actualFilePath;
     if (ext === '.epub') {
       actualFilePath = filePath.replace('.epub', '.txt');
-      // 如果txt文件不存在，先转换epub文件
       if (!fs.existsSync(actualFilePath)) {
-        await handleEpubFile(filePath);
+        await handleEpubFile(oriFilePath);
       }
     }
     
-    // 读取文件内容，获取总行数
     const content = fs.readFileSync(actualFilePath, 'utf-8');
     const lines = content.split('\n').filter(x => x !== '');
     const totalLines = lines.length;
-    
-    // 确保新行号在有效范围内
     const validLine = Math.max(0, Math.min(newLine, totalLines - 1));
-    
-    // 保存新的进度
     const { saveReadingProgress } = require('../services/progress');
     saveReadingProgress(actualFilePath, validLine, totalLines);
-    
-    // 更新文件列表，显示新的进度
     updateFileList(panel);
-    
-    // 显示成功消息
     vscode.window.showInformationMessage(`阅读进度已更新为第 ${validLine} 行`);
   } catch (error) {
-    console.error('设置阅读进度失败:', error.message);
+    logger.error('设置阅读进度失败:', error.message);
     vscode.window.showErrorMessage('设置阅读进度失败: ' + error.message);
   }
 }

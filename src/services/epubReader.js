@@ -3,6 +3,7 @@ const EPub = require('epub2').EPub;
 const cheerio = require('cheerio');
 const fs = require('fs');
 const bookReader = require('./bookReader');
+const logger = require('../utils/logger');
 
 /**
  * EPUB 管理器类
@@ -25,7 +26,7 @@ class EpubManager {
       return new Promise((resolve, reject) => {
         // 监听错误事件
         this.epub.on('error', (err) => {
-          console.error('ERROR\n-----', err);
+          logger.error('EPUB解析错误:', err);
           reject(err);
         });
 
@@ -46,7 +47,7 @@ class EpubManager {
         this.epub.parse();
       });
     } catch (error) {
-      console.error('解析EPUB文件失败', error);
+      logger.error('解析EPUB文件失败', error);
       vscode.window.showErrorMessage('解析EPUB文件失败');
       throw error;
     }

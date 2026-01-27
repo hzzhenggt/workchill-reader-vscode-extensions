@@ -15,7 +15,7 @@ let configChangeListeners = [];
  */
 function initializeConfig(context) {
   config = vscode.workspace.getConfiguration('ttt-eye');
-  bookFolderPath = config.get('bookFolder') || context.extensionPath;
+  bookFolderPath = config.get('bookFolder') || '';
   defaultBook = config.get('defaultBook') || '';
   linesPerPage = config.get('linesPerPage') || 1;
   fontSize = config.get('fontSize') || 14;

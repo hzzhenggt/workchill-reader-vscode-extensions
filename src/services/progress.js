@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const logger = require('../utils/logger');
 
 /**
  * 保存阅读进度到书籍同名的进度文件中
@@ -9,14 +10,9 @@ const path = require('path');
  */
 function saveReadingProgress(bookPath, currentLine, totalLines) {
   try {
-    // 创建与书籍同名的进度文件路径
     const progressFilePath = bookPath + '.进度.json';
-    
-    // 读取书籍内容，获取上下文
     const bookContent = fs.readFileSync(bookPath, 'utf-8');
     const lines = bookContent.split('\n').filter(x => x !== '');
-    
-    // 生成上下文内容（当前行前后的内容，总共约200字）
     let context = '';
     const contextLines = 10; // 前后各取10行
     const startContextLine = Math.max(0, currentLine - contextLines);
@@ -47,7 +43,7 @@ function saveReadingProgress(bookPath, currentLine, totalLines) {
     // 写入进度文件
     fs.writeFileSync(progressFilePath, JSON.stringify(progress, null, 2));
   } catch (error) {
-    console.error('保存阅读进度失败:', error.message);
+    logger.error('保存阅读进度失败:', error.message);
   }
 }
 
@@ -90,7 +86,7 @@ function getReadingProgress(bookFolderPath = null) {
             const bookProgress = JSON.parse(fs.readFileSync(progressFilePath, 'utf-8'));
             progress[bookPath] = bookProgress;
           } catch (error) {
-            console.error(`读取进度文件失败 ${progressFilePath}:`, error.message);
+            logger.error(`读取进度文件失败 ${progressFilePath}:`, error.message);
           }
         }
       }
@@ -98,7 +94,7 @@ function getReadingProgress(bookFolderPath = null) {
     
     return progress;
   } catch (error) {
-    console.error('获取阅读进度失败:', error.message);
+    logger.error('获取阅读进度失败:', error.message);
     return {};
   }
 }
