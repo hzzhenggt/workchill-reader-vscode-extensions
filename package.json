@@ -113,6 +113,16 @@
           "type": "string",
           "default": "#A8A8A8",
           "description": "阅读文字颜色"
+        },
+        "ttt-eye.enableMultiLineDisplay": {
+          "type": "boolean",
+          "default": false,
+          "description": "启用多行显示"
+        },
+        "ttt-eye.autoDetectFolderType": {
+          "type": "boolean",
+          "default": false,
+          "description": "自动检测文件夹类型"
         }
       }
     }

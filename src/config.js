@@ -7,6 +7,8 @@ let defaultBook;
 let linesPerPage;
 let fontSize;
 let fontColor;
+let enableMultiLineDisplay;
+let autoDetectFolderType;
 let configChangeListeners = [];
 
 /**
@@ -20,6 +22,8 @@ function initializeConfig(context) {
   linesPerPage = config.get('linesPerPage') || 1;
   fontSize = config.get('fontSize') || 14;
   fontColor = config.get('fontColor') || '#A8A8A8';
+  enableMultiLineDisplay = config.get('enableMultiLineDisplay') || false;
+  autoDetectFolderType = config.get('autoDetectFolderType') || false;
   
   // 监听配置变更
   context.subscriptions.push(
@@ -57,6 +61,16 @@ function handleConfigChange(event) {
     if (event.affectsConfiguration('ttt-eye.fontColor')) {
       fontColor = config.get('fontColor');
       notifyConfigChange('fontColor', fontColor);
+    }
+
+    if (event.affectsConfiguration('ttt-eye.enableMultiLineDisplay')) {
+      enableMultiLineDisplay = config.get('enableMultiLineDisplay');
+      notifyConfigChange('enableMultiLineDisplay', enableMultiLineDisplay);
+    }
+
+    if (event.affectsConfiguration('ttt-eye.autoDetectFolderType')) {
+      autoDetectFolderType = config.get('autoDetectFolderType');
+      notifyConfigChange('autoDetectFolderType', autoDetectFolderType);
     }
   }
 }
@@ -98,6 +112,8 @@ module.exports = {
   getLinesPerPage: () => linesPerPage,
   getFontSize: () => fontSize,
   getFontColor: () => fontColor,
+  getEnableMultiLineDisplay: () => enableMultiLineDisplay,
+  getAutoDetectFolderType: () => autoDetectFolderType,
   updateConfig,
   addConfigChangeListener
 }; 

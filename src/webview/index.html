@@ -483,6 +483,24 @@
           提示：设置默认书籍后，按 Ctrl+0 (Mac: Cmd+0) 可直接打开默认书籍阅读
         </div>
       </div>
+      <div class="form-group" style="margin-top: 16px;">
+        <label>
+          <input type="checkbox" id="enable-multi-line-display" class="input">
+          启用多行显示
+        </label>
+        <div class="info-box" style="margin-top: 8px;">
+          启用后，将按照设置的行数显示多行内容，而不是一行一行显示
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 16px;">
+        <label>
+          <input type="checkbox" id="auto-detect-folder-type" class="input">
+          自动检测文件夹类型
+        </label>
+        <div class="info-box" style="margin-top: 8px;">
+          启用后，将自动检测文件夹类型并添加注释头
+        </div>
+      </div>
       <button id="save-settings" class="btn-primary">保存设置</button>
     </div>
   </div>
@@ -574,6 +592,8 @@
       document.getElementById('font-size').value = settings.fontSize || 14;
       document.getElementById('font-color').value = settings.fontColor || '#A8A8A8';
       document.getElementById('default-book').value = settings.defaultBook || '';
+      document.getElementById('enable-multi-line-display').checked = settings.enableMultiLineDisplay || false;
+      document.getElementById('auto-detect-folder-type').checked = settings.autoDetectFolderType || false;
     }
 
     // 设置默认书籍
@@ -606,12 +626,16 @@
       const linesPerPage = document.getElementById('lines-per-page').value;
       const fontSize = document.getElementById('font-size').value;
       const fontColor = document.getElementById('font-color').value;
+      const enableMultiLineDisplay = document.getElementById('enable-multi-line-display').checked;
+      const autoDetectFolderType = document.getElementById('auto-detect-folder-type').checked;
       
       vscode.postMessage({ 
         command: 'saveSettings',
         linesPerPage: parseInt(linesPerPage),
         fontSize: parseInt(fontSize),
-        fontColor: fontColor
+        fontColor: fontColor,
+        enableMultiLineDisplay: enableMultiLineDisplay,
+        autoDetectFolderType: autoDetectFolderType
       });
     });
 

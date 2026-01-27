@@ -68,7 +68,9 @@ function registerSettingsCommands() {
           fontSize: config.get('fontSize') || 14,
           fontColor: config.get('fontColor') || '#A8A8A8',
           defaultBook: config.get('defaultBook') || '',
-          bookFolderPath: getBookFolderPath()
+          bookFolderPath: getBookFolderPath(),
+          enableMultiLineDisplay: config.get('enableMultiLineDisplay') || false,
+          autoDetectFolderType: config.get('autoDetectFolderType') || false
         },
       });
 

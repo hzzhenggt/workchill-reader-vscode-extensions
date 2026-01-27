@@ -1,6 +1,6 @@
 const fs = require('fs');
 const vscode = require('vscode');
-const { getLinesPerPage, getFontSize, getFontColor, addConfigChangeListener } = require('../config');
+const { getLinesPerPage, getFontSize, getFontColor, getEnableMultiLineDisplay, addConfigChangeListener } = require('../config');
 const { saveReadingProgress } = require('./progress');
 
 /**
@@ -20,7 +20,7 @@ class BookReader {
 
     // 监听配置变更，实时更新显示
     addConfigChangeListener((key, value) => {
-      if ((key === 'linesPerPage' || key === 'fontSize' || key === 'fontColor') && this.isReading()) {
+      if ((key === 'linesPerPage' || key === 'fontSize' || key === 'fontColor' || key === 'enableMultiLineDisplay') && this.isReading()) {
         this.showCurrentLine();
       }
     });
@@ -62,31 +62,70 @@ class BookReader {
       this.currentDecorationType.dispose();
     }
 
-    // 获取要显示的行数
+    // 获取配置
     const linesCount = getLinesPerPage();
+    const enableMultiLine = getEnableMultiLineDisplay();
     const startPosition = editor.selection.active;
     const decorations = [];
 
-    // 计算每行应该显示的内容
-    for (let i = 0; i < linesCount; i++) {
-      const currentLineIndex = this.currentLineIndex + i;
-      if (currentLineIndex >= this.currentBookLines.length) break;
+    // 根据enableMultiLineDisplay配置决定显示方式
+    if (enableMultiLine) {
+      // 启用多行显示：将多行内容合并到一个装饰器中显示
+      let contentText = '';
+      for (let i = 0; i < linesCount; i++) {
+        const currentLineIndex = this.currentLineIndex + i;
+        if (currentLineIndex >= this.currentBookLines.length) break;
 
-      const lineText = this.currentBookLines[currentLineIndex];
-      const position = new vscode.Position(startPosition.line + i, 0);
-      decorations.push({
-        range: new vscode.Range(position, position),
-        renderOptions: {
-          after: {
-            contentText: lineText,
-            fontStyle: `normal`,
-            fontWeight: 'normal',
-            fontSize: `${getFontSize()}px`,
-            color: getFontColor(),
-            margin: '0 0 0 2em',
+        const lineText = this.currentBookLines[currentLineIndex];
+        contentText += lineText + '\n';
+      }
+
+      // 如果有内容，创建一个装饰器来显示所有行
+      if (contentText) {
+        decorations.push({
+          range: new vscode.Range(startPosition, startPosition),
+          renderOptions: {
+            after: {
+              contentText: contentText.trim(),
+              fontStyle: `normal`,
+              fontWeight: 'normal',
+              fontSize: `${getFontSize()}px`,
+              color: getFontColor(),
+              margin: `0 0 0 2em`,
+              whiteSpace: 'pre-wrap',
+              display: 'block'
+            }
           }
-        }
-      });
+        });
+      }
+    } else {
+      // 关闭多行显示：将所有行合并到一个装饰器中显示
+      let contentText = '';
+      for (let i = 0; i < linesCount; i++) {
+        const currentLineIndex = this.currentLineIndex + i;
+        if (currentLineIndex >= this.currentBookLines.length) break;
+
+        const lineText = this.currentBookLines[currentLineIndex];
+        contentText += lineText + '\t';
+      }
+
+      // 如果有内容，创建一个装饰器来显示所有行
+      if (contentText) {
+        decorations.push({
+          range: new vscode.Range(startPosition, startPosition),
+          renderOptions: {
+            after: {
+              contentText: contentText.trim(),
+              fontStyle: `normal`,
+              fontWeight: 'normal',
+              fontSize: `${getFontSize()}px`,
+              color: getFontColor(),
+              margin: '0 0 0 2em',
+              display: 'block'
+            }
+          }
+        });
+      }
     }
 
     // 创建新的装饰器类型

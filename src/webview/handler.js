@@ -79,6 +79,8 @@ async function handleSaveSettings(message) {
     await updateConfig('linesPerPage', parseInt(message.linesPerPage));
     await updateConfig('fontSize', parseInt(message.fontSize));
     await updateConfig('fontColor', message.fontColor);
+    await updateConfig('enableMultiLineDisplay', message.enableMultiLineDisplay);
+    await updateConfig('autoDetectFolderType', message.autoDetectFolderType);
     vscode.window.showInformationMessage('设置已保存并生效');
     logger.log('Settings saved:', message); 
   } catch (error) {
@@ -112,6 +114,8 @@ async function handleSetDefaultBook(message, panel) {
         linesPerPage: getConfig().get('linesPerPage') || 1,
         fontSize: getConfig().get('fontSize') || 14,
         fontColor: getConfig().get('fontColor') || '#A8A8A8',
+        enableMultiLineDisplay: getConfig().get('enableMultiLineDisplay') || false,
+        autoDetectFolderType: getConfig().get('autoDetectFolderType') || false,
         bookFolderPath: getBookFolderPath()
       }
     });
@@ -134,6 +138,8 @@ async function handleClearDefaultBook(panel) {
         linesPerPage: getConfig().get('linesPerPage') || 1,
         fontSize: getConfig().get('fontSize') || 14,
         fontColor: getConfig().get('fontColor') || '#A8A8A8',
+        enableMultiLineDisplay: getConfig().get('enableMultiLineDisplay') || false,
+        autoDetectFolderType: getConfig().get('autoDetectFolderType') || false,
         bookFolderPath: getBookFolderPath()
       }
     });
