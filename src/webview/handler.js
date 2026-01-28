@@ -76,7 +76,7 @@ function updateFileList(panel) {
 
 async function handleSaveSettings(message) {
   try {
-    await updateConfig('linesPerPage', parseInt(message.linesPerPage));
+    await updateConfig('linesPerPage', Math.max(1, parseInt(message.linesPerPage)));
     await updateConfig('fontSize', parseInt(message.fontSize));
     await updateConfig('fontColor', message.fontColor);
     await updateConfig('enableMultiLineDisplay', message.enableMultiLineDisplay);

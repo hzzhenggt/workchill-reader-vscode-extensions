@@ -19,7 +19,7 @@ function initializeConfig(context) {
   config = vscode.workspace.getConfiguration('ttt-eye');
   bookFolderPath = config.get('bookFolder') || '';
   defaultBook = config.get('defaultBook') || '';
-  linesPerPage = config.get('linesPerPage') || 1;
+  linesPerPage = Math.max(1, config.get('linesPerPage') || 1);
   fontSize = config.get('fontSize') || 14;
   fontColor = config.get('fontColor') || '#A8A8A8';
   enableMultiLineDisplay = config.get('enableMultiLineDisplay') || false;
@@ -49,7 +49,7 @@ function handleConfigChange(event) {
     }
     
     if (event.affectsConfiguration('ttt-eye.linesPerPage')) {
-      linesPerPage = config.get('linesPerPage');
+      linesPerPage = Math.max(1, config.get('linesPerPage'));
       notifyConfigChange('linesPerPage', linesPerPage);
     }
 

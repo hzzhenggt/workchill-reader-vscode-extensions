@@ -70,29 +70,24 @@ class BookReader {
 
     // 根据enableMultiLineDisplay配置决定显示方式
     if (enableMultiLine) {
-      // 启用多行显示：将多行内容合并到一个装饰器中显示
-      let contentText = '';
+      // 启用多行显示：为每一行创建一个装饰器，使用不同的行位置
       for (let i = 0; i < linesCount; i++) {
         const currentLineIndex = this.currentLineIndex + i;
         if (currentLineIndex >= this.currentBookLines.length) break;
 
         const lineText = this.currentBookLines[currentLineIndex];
-        contentText += lineText + '\n';
-      }
-
-      // 如果有内容，创建一个装饰器来显示所有行
-      if (contentText) {
+        // 为每一行使用不同的行位置
+        const linePosition = new vscode.Position(startPosition.line + i, 0);
         decorations.push({
-          range: new vscode.Range(startPosition, startPosition),
+          range: new vscode.Range(linePosition, linePosition),
           renderOptions: {
             after: {
-              contentText: contentText.trim(),
+              contentText: lineText,
               fontStyle: `normal`,
               fontWeight: 'normal',
               fontSize: `${getFontSize()}px`,
               color: getFontColor(),
-              margin: `0 0 0 2em`,
-              whiteSpace: 'pre-wrap',
+              margin: '0 0 0 2em',
               display: 'block'
             }
           }
@@ -106,7 +101,7 @@ class BookReader {
         if (currentLineIndex >= this.currentBookLines.length) break;
 
         const lineText = this.currentBookLines[currentLineIndex];
-        contentText += lineText + '\t';
+        contentText += lineText + ' ';
       }
 
       // 如果有内容，创建一个装饰器来显示所有行
